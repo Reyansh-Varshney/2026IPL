@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPL 2026 Auction Dashboard & Squad Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- HTML2Canvas for screenshots -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        /* Custom scrollbar for better UI in lists */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        
+        /* Chart container constraint classes */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+            max-height: 250px;
+        }
+
+        .player-card {
+            transition: all 0.2s ease;
+        }
+        .player-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        /* Dynamic Team Gradients */
+        .team-grad-CSK { background: linear-gradient(135deg, #F9CD05 0%, #F49E0F 100%); color: #000; }
+        .team-grad-MI { background: linear-gradient(135deg, #004BA0 0%, #0077D7 100%); color: #fff; }
+        .team-grad-RCB { background: linear-gradient(135deg, #EC1C24 0%, #2B2B2B 100%); color: #fff; }
+        .team-grad-KKR { background: linear-gradient(135deg, #3A225D 0%, #B3A123 100%); color: #fff; }
+        .team-grad-SRH { background: linear-gradient(135deg, #F76419 0%, #303030 100%); color: #fff; }
+        .team-grad-LSG { background: linear-gradient(135deg, #0084CA 0%, #30EFCE 100%); color: #fff; }
+        .team-grad-GT { background: linear-gradient(135deg, #1B2133 0%, #B79858 100%); color: #fff; }
+        .team-grad-RR { background: linear-gradient(135deg, #EB839D 0%, #254AA5 100%); color: #fff; }
+        .team-grad-DC { background: linear-gradient(135deg, #0078BC 0%, #EF1B23 100%); color: #fff; }
+        .team-grad-PBKS { background: linear-gradient(135deg, #DD1F2D 0%, #A7A9AC 100%); color: #fff; }
+
+        /* Loader */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals for background (Stone-50), White for cards, Slate for text. Dynamic vivid gradients for Team Identities. -->
+</head>
+<body class="bg-stone-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Header Section -->
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">IPL 2026 Auction <span class="text-blue-600">Squad Builder</span></h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <label class="text-sm text-slate-500">Manager Name:</label>
+                        <input type="text" id="manager-name-input" placeholder="Enter your name" class="border border-stone-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500" oninput="updateManagerName(this.value)">
+                    </div>
+                </div>
+                <div class="bg-stone-100 rounded-lg p-3 flex gap-4 text-xs md:text-sm">
+                    <div class="text-center border-r border-stone-300 pr-4">
+                        <span class="block font-bold text-green-600">₹25.2 Cr</span>
+                        <span class="text-slate-500">Cameron Green</span>
+                    </div>
+                    <div class="text-center border-r border-stone-300 pr-4">
+                        <span class="block font-bold text-blue-600">₹14.2 Cr</span>
+                        <span class="text-slate-500">Prashant Veer</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="block font-bold text-slate-700">10 Teams</span>
+                        <span class="text-slate-500">77 Slots Filled</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-6 w-full gap-6 flex flex-col">
+
+        <!-- Team Selector -->
+        <nav class="w-full overflow-x-auto pb-2 custom-scrollbar">
+            <div class="flex gap-3 min-w-max" id="team-selector-container">
+                <!-- JS will populate buttons here -->
+            </div>
+        </nav>
+
+        <!-- Builder Interface -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Left Col: Squad Selection -->
+            <div class="lg:col-span-4 flex flex-col gap-4">
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden h-[650px] flex flex-col">
+                    <div class="p-4 border-b border-stone-200 bg-stone-50">
+                        <h3 class="font-bold text-lg flex justify-between items-center">
+                            Full Squad
+                            <span class="text-xs font-normal bg-stone-200 px-2 py-1 rounded-full text-stone-600" id="squad-count">0 Players</span>
+                        </h3>
+                        <p class="text-xs text-stone-500 mt-1">Click + to add to Playing XI</p>
+                    </div>
+                    <div class="flex-grow overflow-y-auto p-2 custom-scrollbar" id="squad-list">
+                        <!-- Player List -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Col: Playing XI Display -->
+            <div class="lg:col-span-5 flex flex-col gap-4">
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 min-h-[650px] flex flex-col relative overflow-hidden">
+                    
+                    <!-- Pitch Background Effect -->
+                    <div class="absolute inset-0 bg-green-50 opacity-50 pointer-events-none"></div>
+                    <div class="absolute inset-x-12 top-0 bottom-0 border-x-2 border-dashed border-green-100 pointer-events-none"></div>
+
+                    <div class="p-4 border-b border-stone-200 bg-white/80 backdrop-blur-sm z-10 flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-lg"><span class="dynamic-manager-name">My</span> Playing XI</h3>
+                            <p class="text-xs text-stone-500">Select 11 Players</p>
+                        </div>
+                        <button onclick="resetBuilder()" class="text-xs text-red-500 hover:text-red-700 font-medium underline">Reset XI</button>
+                    </div>
+
+                    <div class="flex-grow p-4 z-10 flex flex-col gap-2 overflow-y-auto custom-scrollbar" id="playing-xi-list">
+                        <!-- Selected Players -->
+                    </div>
+
+                    <!-- Impact Player Slot -->
+                    <div class="p-4 border-t border-stone-200 bg-yellow-50/80 z-10">
+                        <h4 class="text-xs font-bold text-yellow-800 uppercase tracking-wider mb-2">Impact Player</h4>
+                        <div id="impact-player-slot" class="min-h-[50px] border-2 border-dashed border-yellow-300 rounded-lg flex items-center justify-center text-sm text-yellow-600 bg-yellow-100/50">
+                            Select 1 Impact Player
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Col: Analytics & Export -->
+            <div class="lg:col-span-3 flex flex-col gap-4">
+                
+                <!-- Team Info Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
+                    <h3 class="font-bold text-slate-800 mb-2" id="team-name-display">Select a Team</h3>
+                    <p class="text-sm text-slate-500" id="team-captain-display">Captain: -</p>
+                </div>
+
+                <!-- Analysis Chart -->
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-4 flex flex-col items-center">
+                    <h3 class="font-bold text-sm text-slate-700 mb-4 w-full text-left">Squad Composition</h3>
+                    <div class="chart-container">
+                        <canvas id="compositionChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2 w-full text-xs text-center">
+                        <div class="bg-blue-50 p-2 rounded text-blue-800">
+                            <span class="block font-bold text-lg" id="stat-bat">0</span> Batters
+                        </div>
+                        <div class="bg-green-50 p-2 rounded text-green-800">
+                            <span class="block font-bold text-lg" id="stat-all">0</span> All-Rounders
+                        </div>
+                        <div class="bg-red-50 p-2 rounded text-red-800">
+                            <span class="block font-bold text-lg" id="stat-bowl">0</span> Bowlers
+                        </div>
+                        <div class="bg-purple-50 p-2 rounded text-purple-800">
+                            <span class="block font-bold text-lg" id="stat-wk">0</span> WKs
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Section -->
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
+                    <h3 class="font-bold text-sm text-slate-700 mb-3">Export Options</h3>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="exportCurrentTeam('image')" class="flex items-center justify-center gap-2 w-full py-2 bg-slate-800 text-white rounded hover:bg-slate-700 text-sm font-medium transition-colors">
+                            <span>📷</span> Save as Image
+                        </button>
+                        <button onclick="exportCurrentTeam('pdf')" class="flex items-center justify-center gap-2 w-full py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium transition-colors">
+                            <span>📄</span> Save as PDF
+                        </button>
+                        <div class="h-px bg-stone-200 my-1"></div>
+                        <button onclick="exportAllTeams()" id="btn-export-all" class="flex items-center justify-center gap-2 w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium transition-colors">
+                            <span>📚</span> Export All Teams (PDF)
+                        </button>
+                        <div id="export-status" class="text-xs text-center text-slate-500 mt-1 hidden">Generating...</div>
+                    </div>
+                </div>
+
+                <!-- Status Check -->
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
+                    <h3 class="font-bold text-sm text-slate-700 mb-2">Team Status</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex justify-between">
+                            <span class="text-slate-500">Playing XI:</span>
+                            <span class="font-bold" id="status-xi">0/11</span>
+                        </li>
+                        <li class="flex justify-between">
+                            <span class="text-slate-500">Impact Player:</span>
+                            <span class="font-bold" id="status-impact">0/1</span>
+                        </li>
+                        <li class="flex justify-between mt-2 pt-2 border-t border-stone-100">
+                            <span class="text-slate-500">Status:</span>
+                            <span class="font-bold text-orange-500" id="status-text">Incomplete</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- HIDDEN EXPORT TEMPLATE -->
+    <!-- This container is populated by JS, rendered off-screen, then captured -->
+    <div id="export-container-wrapper" class="fixed top-0 left-0 w-[800px] pointer-events-none opacity-0 -z-50">
+        <div id="export-template" class="w-[800px] bg-white p-8 flex flex-col gap-6 font-sans">
+            <!-- Export Header -->
+            <div id="exp-header" class="p-6 rounded-xl flex justify-between items-center text-white">
+                <div>
+                    <h1 class="text-3xl font-bold" id="exp-team-name">Team Name</h1>
+                    <h2 class="text-xl opacity-90 mt-1"><span class="exp-manager-name">User</span>'s Playing XI</h2>
+                </div>
+                <div class="text-right">
+                    <div class="text-4xl font-black opacity-20">IPL 2026</div>
+                    <div class="text-sm font-medium opacity-80 uppercase tracking-widest">Official Squad</div>
+                </div>
+            </div>
+
+            <!-- Export Body -->
+            <div class="grid grid-cols-2 gap-8">
+                <!-- Left: Playing XI -->
+                <div class="flex flex-col gap-2">
+                    <h3 class="text-lg font-bold text-slate-800 border-b-2 border-slate-200 pb-2 mb-2">Playing XI</h3>
+                    <div id="exp-xi-list" class="flex flex-col gap-1">
+                        <!-- Items injected here -->
+                    </div>
+                </div>
+
+                <!-- Right: Impact & Bench -->
+                <div class="flex flex-col gap-6">
+                    <!-- Impact -->
+                    <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-xl">
+                        <h3 class="text-sm font-bold text-yellow-800 uppercase tracking-wider mb-2">Impact Player</h3>
+                        <div id="exp-impact" class="text-xl font-bold text-slate-800">Not Selected</div>
+                        <div id="exp-impact-role" class="text-sm text-slate-500"></div>
+                    </div>
+
+                    <!-- Bench -->
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 border-b-2 border-slate-200 pb-2 mb-2">Bench</h3>
+                        <div id="exp-bench-list" class="grid grid-cols-1 gap-1 text-sm text-slate-600">
+                            <!-- Items injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Footer -->
+            <div class="mt-4 pt-4 border-t border-stone-200 flex justify-between text-xs text-slate-400">
+                <span>Generated via IPL 2026 Squad Builder</span>
+                <span>Season 2026 • Abu Dhabi Auction</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Data Handling ---
+        
+        // Extended and Corrected Role Map
+        const roleMap = {
+            // WK-Batters
+            'Rishabh Pant': 'WK-Batter', 'Nicholas Pooran': 'WK-Batter', 'KL Rahul': 'WK-Batter', 'M.S. Dhoni': 'WK-Batter',
+            'Sanju Samson': 'WK-Batter', 'Jos Buttler': 'WK-Batter', 'Quinton de Kock': 'WK-Batter', 'Ishan Kishan': 'WK-Batter',
+            'Heinrich Klaasen': 'WK-Batter', 'Phil Salt': 'WK-Batter', 'Jitesh Sharma': 'WK-Batter', 'Anuj Rawat': 'WK-Batter',
+            'Abishek Porel': 'WK-Batter', 'Kumar Kushagra': 'WK-Batter', 'Robin Minz': 'WK-Batter', 'Vishnu Vinod': 'WK-Batter',
+            'Josh Inglis': 'WK-Batter', 'Tim Seifert': 'WK-Batter', 'Ryan Rickleton': 'WK-Batter', 'Urvil Patel': 'WK-Batter',
+            'Jordan Cox': 'WK-Batter', 'Tom Banton': 'WK-Batter', 'Prabhsimran Singh': 'WK-Batter', 'Dhruv Jurel': 'WK-Batter',
+
+            // Batters
+            'Virat Kohli': 'Batter', 'Rohit Sharma': 'Batter', 'Shubman Gill': 'Batter', 'Yashasvi Jaiswal': 'Batter',
+            'Suryakumar Yadav': 'Batter', 'Shreyas Iyer': 'Batter', 'Ruturaj Gaikwad': 'Batter', 'Rinku Singh': 'Batter',
+            'Tilak Varma': 'Batter', 'Sai Sudharsan': 'Batter', 'David Miller': 'Batter', 'Shimron Hetmyer': 'Batter',
+            'Travis Head': 'Batter', 'Ajinkya Rahane': 'Batter', 'Manish Pandey': 'Batter', 'Prithvi Shaw': 'Batter',
+            'Devdutt Padikkal': 'Batter', 'Tristan Stubbs': 'Batter', 'Sameer Rizvi': 'Batter', 'Harry Brook': 'Batter',
+            'Ben Duckett': 'Batter', 'Faf du Plessis': 'Batter', 'Kane Williamson': 'Batter', 'Steve Smith': 'Batter',
+            'Ayush Badoni': 'Batter', 'Ashton Turner': 'Batter', 'Sherfane Rutherford': 'Batter', 'Rahul Tripathi': 'Batter',
+            'Rovman Powell': 'Batter', 'Angkrish Raghuvanshi': 'Batter', 'Nehal Wadhera': 'Batter', 'Shashank Singh': 'Batter',
+            'Nitish Rana': 'Batter', 'Karun Nair': 'Batter', 'Shahrukh Khan': 'Batter', 'Abhinav Manohar': 'Batter',
+            'Dewald Brevis': 'Batter', 'Sarfaraz Khan': 'Batter', 'Rajat Patidar': 'Batter', 'Tim David': 'Batter',
+            'Donovan Ferreira': 'Batter', 'Shubham Dubey': 'Batter', 'Lhuan-Dre Pretorius': 'Batter', 'Ayush Mhatre': 'Batter',
+
+            // All-Rounders
+            'Ravindra Jadeja': 'All-Rounder', 'Hardik Pandya': 'All-Rounder', 'Axar Patel': 'All-Rounder', 'Cameron Green': 'All-Rounder',
+            'Marcus Stoinis': 'All-Rounder', 'Andre Russell': 'All-Rounder', 'Sunil Narine': 'All-Rounder', 'Glenn Maxwell': 'All-Rounder',
+            'Liam Livingstone': 'All-Rounder', 'Sam Curran': 'All-Rounder', 'Moeen Ali': 'All-Rounder', 'Mitchell Santner': 'All-Rounder',
+            'Washington Sundar': 'All-Rounder', 'Krunal Pandya': 'All-Rounder', 'Shivam Dube': 'All-Rounder', 'Riyan Parag': 'All-Rounder',
+            'Nitish Kumar Reddy': 'All-Rounder', 'Wanindu Hasaranga': 'All-Rounder', 'Rachin Ravindra': 'All-Rounder', 'Azmatullah Omarzai': 'All-Rounder',
+            'Marco Jansen': 'All-Rounder', 'Romario Shepherd': 'All-Rounder', 'Jason Holder': 'All-Rounder', 'Rahul Tewatia': 'All-Rounder',
+            'Will Jacks': 'All-Rounder', 'Abhishek Sharma': 'All-Rounder', 'Shahbaz Ahmed': 'All-Rounder', 'Ramandeep Singh': 'All-Rounder',
+            'Venkatesh Iyer': 'All-Rounder', 'Deepak Hooda': 'All-Rounder', 'K. Gowtham': 'All-Rounder', 'Vijay Shankar': 'All-Rounder',
+            'Abdul Samad': 'All-Rounder', 'Aiden Markram': 'Batter', 'Glenn Phillips': 'All-Rounder', 'Arshin Kulkarni': 'All-Rounder',
+            'Naman Dhir': 'All-Rounder', 'Anukul Roy': 'All-Rounder', 'Swapnil Singh': 'All-Rounder', 'Jacob Bethell': 'All-Rounder',
+            'Matthew Short': 'All-Rounder', 'Aman Khan': 'All-Rounder', 'Jamie Overton': 'All-Rounder', 'Prashant Veer': 'All-Rounder',
+            'Tanush Kotian': 'All-Rounder', 'Harvik Desai': 'All-Rounder', 'Ajay Mandal': 'All-Rounder', 'Ashutosh Sharma': 'All-Rounder',
+
+            // Bowlers
+            'Jasprit Bumrah': 'Bowler', 'Mohammed Shami': 'Bowler', 'Mohammed Siraj': 'Bowler', 'Trent Boult': 'Bowler',
+            'Rashid Khan': 'Bowler', 'Yuzvendra Chahal': 'Bowler', 'Kuldeep Yadav': 'Bowler', 'Ravi Bishnoi': 'Bowler',
+            'Arshdeep Singh': 'Bowler', 'Kagiso Rabada': 'Bowler', 'Pat Cummins': 'Bowler', 'Mitchell Starc': 'Bowler',
+            'Matheesha Pathirana': 'Bowler', 'Nandre Burger': 'Bowler', 'Anrich Nortje': 'Bowler', 'Josh Hazlewood': 'Bowler',
+            'Varun Chakaravarthy': 'Bowler', 'T Natarajan': 'Bowler', 'Bhuvneshwar Kumar': 'Bowler', 'Deepak Chahar': 'Bowler',
+            'Nathan Ellis': 'Bowler', 'Adam Milne': 'Bowler', 'Lungi Ngidi': 'Bowler', 'Mustafizur Rahman': 'Bowler',
+            'Noor Ahmad': 'Bowler', 'Khaleel Ahmed': 'Bowler', 'Ishant Sharma': 'Bowler', 'Prasidh Krishna': 'Bowler',
+            'Harshal Patel': 'Bowler', 'Tushar Deshpande': 'Bowler', 'Mukesh Kumar': 'Bowler', 'Mohit Sharma': 'Bowler',
+            'Sandeep Sharma': 'Bowler', 'Mayank Markande': 'Bowler', 'Suyash Sharma': 'Bowler', 'Akash Madhwal': 'Bowler',
+            'Umran Malik': 'Bowler', 'Lockie Ferguson': 'Bowler', 'Alzarri Joseph': 'Bowler', 'Spencer Johnson': 'Bowler',
+            'Gerald Coetzee': 'Bowler', 'Dilshan Madushanka': 'Bowler', 'Nuwan Thushara': 'Bowler', 'Jhye Richardson': 'Bowler',
+            'Avesh Khan': 'Bowler', 'Mohsin Khan': 'Bowler', 'Mayank Yadav': 'Bowler', 'Ravi Bishnoi': 'Bowler',
+            'Manimaran Siddharth': 'Bowler', 'Yash Thakur': 'Bowler', 'Harshit Rana': 'Bowler', 'Vaibhav Arora': 'Bowler',
+            'Jaydev Unadkat': 'Bowler', 'Mayank Markande': 'Bowler', 'Shardul Thakur': 'Bowler', 'Harpreet Brar': 'Bowler',
+            'Rahul Chahar': 'Bowler', 'Mukesh Choudhary': 'Bowler', 'Simarjeet Singh': 'Bowler', 'Yash Dayal': 'Bowler',
+            'Vijaykumar Vyshak': 'Bowler', 'Reece Topley': 'Bowler', 'Tom Curran': 'Bowler', 'Sandeep Warrier': 'Bowler',
+            'Kuldeep Sen': 'Bowler', 'Navdeep Saini': 'Bowler', 'Dushmantha Chameera': 'Bowler', 'Lizaad Williams': 'Bowler',
+            'Sai Kishore': 'Bowler', 'Jayant Yadav': 'Bowler', 'Umesh Yadav': 'Bowler', 'Akash Deep': 'Bowler', 'Akeal Hosein': 'Bowler',
+            'Matt Henry': 'Bowler', 'Zak Foulkes': 'Bowler', 'Allah Ghafanzar': 'Bowler', 'Ashwani Kumar': 'Bowler',
+            'Kwena Maphaka': 'Bowler', 'Kotian': 'Bowler', 'Xavier Bartlett': 'Bowler', 'Vyshak Vijaykumar': 'Bowler',
+            'Ben Dwarshuis': 'Bowler', 'Pravin Dubey': 'Bowler', 'Rasikh Salam': 'Bowler', 'Kartik Tyagi': 'Bowler',
+            'Prashant Solanki': 'Bowler', 'Chetan Sakariya': 'Bowler', 'Sakib Hussain': 'Bowler'
+        };
+
+        function getRole(name) {
+            if (roleMap[name]) return roleMap[name];
+            if (name.includes("Keep") || name.includes("WK")) return "WK-Batter";
+            // Fallback for names not found, but try to be smarter or default to AR
+            return "All-Rounder"; 
+        }
+
+        const rawData = {
+            "LSG": { name: "Lucknow Super Giants", colorClass: "team-grad-LSG", colorHex: "#0084CA", captain: "Rishabh Pant", players: ["Abdul Samad", "Ayush Badoni", "Aiden Markram", "Matthew Breetzke", "Himmat Singh", "Rishabh Pant", "Nicholas Pooran", "Mitchell Marsh", "Shahbaz Ahmed", "Arshin Kulkarni", "Mayank Yadav", "Avesh Khan", "Mohsin Khan", "Manimaran Siddharth", "Digvesh Rathi", "Prince Yadav", "Akash Singh", "Mohammed Shami", "Arjun Tendulkar", "Wanindu Hasaranga", "Anrich Nortje", "Mukul Choudhary", "Naman Tiwari", "Akshat Raghuwanshi", "Josh Inglis"] },
+            "KKR": { name: "Kolkata Knight Riders", colorClass: "team-grad-KKR", colorHex: "#3A225D", captain: "Shreyas Iyer", players: ["Ajinkya Rahane", "Angkrish Raghuvanshi", "Anukul Roy", "Harshit Rana", "Manish Pandey", "Ramandeep Singh", "Rinku Singh", "Rovman Powell", "Sunil Narine", "Umran Malik", "Vaibhav Arora", "Varun Chakaravarthy", "Cameron Green", "Finn Allen", "Matheesha Pathirana", "Tejasvi Singh", "Kartik Tyagi", "Prashant Solanki", "Rahul Tripathi", "Tim Seifert", "Mustafizur Rahman", "Sarthak Ranjan", "Daksh Kamra", "Rachin Ravindra", "Akash Deep"] },
+            "SRH": { name: "Sunrisers Hyderabad", colorClass: "team-grad-SRH", colorHex: "#F76419", captain: "Pat Cummins", players: ["Pat Cummins", "Travis Head", "Abhishek Sharma", "Aniket Verma", "R. Smaran", "Ishan Kishan", "Heinrich Klaasen", "Nitish Kumar Reddy", "Harsh Dubey", "Kamindu Mendis", "Harshal Patel", "Brydon Carse", "Jaydev Unadkat", "Eshan Malinga", "Zeeshan Ansari", "Shivang Kumar", "Salil Arora", "Sakib Hussain", "Onkar Tarmale", "Amit Kumar", "Praful Hinge", "Krains Fuletra", "Liam Livingstone", "Shivam Mavi", "Jack Edwards"] },
+            "MI": { name: "Mumbai Indians", colorClass: "team-grad-MI", colorHex: "#004BA0", captain: "Hardik Pandya", players: ["Hardik Pandya", "Rohit Sharma", "Suryakumar Yadav", "Tilak Varma", "Ryan Rickleton", "Robin Minz", "Raj Bawa", "Raghu Sharma", "Mitchell Santner", "Corbin Bosch", "Naman Dhir", "Jasprit Bumrah", "Trent Boult", "Allah Ghafanzar", "Ashwani Kumar", "Deepak Chahar", "Will Jacks", "Sherfane Rutherford", "Mayank Markande", "Shardul Thakur", "Quinton de Kock", "Danish Malewar", "Mohammad Izhar", "Atharva Ankolekar", "Mayank Rawat"] },
+            "PBKS": { name: "Punjab Kings", colorClass: "team-grad-PBKS", colorHex: "#DD1F2D", captain: "Shreyas Iyer", players: ["Prabhsimran Singh", "Priyansh Arya", "Shreyas Iyer", "Shashank Singh", "Nehal Wadhera", "Marcus Stoinis", "Azmatullah Omarzai", "Marco Jansen", "Harpreet Brar", "Yuzvendra Chahal", "Arshdeep Singh", "Musheer Khan", "Pyala Avinash", "Harnoor Pannu", "Suryansh Shedge", "Mitchell Owen", "Xavier Bartlett", "Lockie Ferguson", "Vyshak Vijaykumar", "Yash Thakur", "Vishnu Vinod", "Cooper Connolly", "Ben Dwarshuis", "Pravin Dubey", "Vishal Nishad"] },
+            "CSK": { name: "Chennai Super Kings", colorClass: "team-grad-CSK", colorHex: "#F9CD05", captain: "Ruturaj Gaikwad", players: ["Ruturaj Gaikwad", "Ayush Mhatre", "M.S. Dhoni", "Sanju Samson", "Dewald Brevis", "Urvil Patel", "Shivam Dube", "Jamie Overton", "Ramakrishna Ghosh", "Noor Ahmad", "Khaleel Ahmed", "Anshul Kamboj", "Gurjapneet Singh", "Shreyas Gopal", "Mukesh Choudhary", "Nathan Ellis", "Akeal Hosein", "Prashant Veer", "Kartik Sharma", "Matthew Short", "Aman Khan", "Sarfaraz Khan", "Matt Henry", "Rahul Chahar", "Zak Foulkes"] },
+            "RCB": { name: "Royal Challengers Bengaluru", colorClass: "team-grad-RCB", colorHex: "#EC1C24", captain: "Rajat Patidar", players: ["Rajat Patidar", "Virat Kohli", "Devdutt Padikkal", "Phil Salt", "Jitesh Sharma", "Krunal Pandya", "Swapnil Singh", "Tim David", "Romario Shepherd", "Jacob Bethell", "Josh Hazlewood", "Yash Dayal", "Bhuvneshwar Kumar", "Nuwan Thushara", "Rasikh Salam", "Abhinandan Singh", "Suyash Sharma", "Venkatesh Iyer", "Jacob Duffy", "Satvik Deswal", "Mangesh Yadav", "Jordan Cox", "Vicky Ostwal", "Vihaan Malhotra", "Kanishk Chouhan"] },
+            "RR": { name: "Rajasthan Royals", colorClass: "team-grad-RR", colorHex: "#EB839D", captain: "Sanju Samson", players: ["Ravindra Jadeja", "Sam Curran", "Donovan Ferreira", "Sandeep Sharma", "Shubham Dubey", "Vaibhav Suryavanshi", "Lhuan-Dre Pretorius", "Shimron Hetmyer", "Yashasvi Jaiswal", "Dhruv Jurel", "Riyan Parag", "Yudhvir Singh Charak", "Jofra Archer", "Tushar Deshpande", "Kwena Maphaka", "Nandre Burger", "Ravi Bishnoi", "Sushant Mishra", "Yash Raj Punja", "Vignesh Puthur", "Ravi Singh", "Aman Rao", "Brijesh Sharma", "Adam Milne", "Kuldeep Sen"] },
+            "DC": { name: "Delhi Capitals", colorClass: "team-grad-DC", colorHex: "#0078BC", captain: "KL Rahul", players: ["Nitish Rana", "Abishek Porel", "Ajay Mandal", "Ashutosh Sharma", "Axar Patel", "Dushmantha Chameera", "Karun Nair", "KL Rahul", "Kuldeep Yadav", "Madhav Tiwari", "Mitchell Starc", "Sameer Rizvi", "T Natarajan", "Tripurana Vijay", "Tristan Stubbs", "Vipraj Nigam", "David Miller", "Ben Duckett", "Auqib Nabi", "Pathum Nissanka", "Lungi Ngidi", "Sahil Parakh", "Prithvi Shaw", "Kyle Jamieson"] },
+            "GT": { name: "Gujarat Titans", colorClass: "team-grad-GT", colorHex: "#1B2133", captain: "Shubman Gill", players: ["Shubman Gill", "Sai Sudharsan", "Kumar Kushagra", "Anuj Rawat", "Jos Buttler", "Nishant Sindhu", "Washington Sundar", "Glenn Phillips", "Arshad Khan", "Shahrukh Khan", "Rahul Tewatia", "Kagiso Rabada", "Mohammed Siraj", "Prasidh Krishna", "Ishant Sharma", "Gurnoor Singh Brar", "Rashid Khan", "Manav Suthar", "Sai Kishore", "Jayant Yadav", "Ashok Sharma", "Jason Holder", "Tom Banton", "Prithvi Raj Yarra", "Luke Wood"] }
+        };
+
+        // --- Application State ---
+        let state = {
+            currentTeam: "CSK",
+            managerName: "My",
+            selections: {}
+        };
+
+        // Initialize Selections State
+        Object.keys(rawData).forEach(team => {
+            state.selections[team] = { xi: [], impact: null };
+        });
+
+        // --- Chart Config ---
+        let chartInstance = null;
+
+        function initChart() {
+            const ctx = document.getElementById('compositionChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Batters', 'Bowlers', 'All-Rounders', 'Wicketkeepers'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#a855f7'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // --- Core Functions ---
+
+        function updateManagerName(val) {
+            state.managerName = val.trim() === "" ? "My" : val;
+            const elements = document.querySelectorAll('.dynamic-manager-name');
+            elements.forEach(el => el.textContent = state.managerName);
+        }
+
+        function renderTeamSelector() {
+            const container = document.getElementById('team-selector-container');
+            container.innerHTML = '';
+            
+            Object.keys(rawData).forEach(code => {
+                const team = rawData[code];
+                const btn = document.createElement('button');
+                btn.className = `flex-shrink-0 px-4 py-2 rounded-lg font-bold text-sm transition-all ${state.currentTeam === code ? `${team.colorClass} shadow-md transform scale-105` : 'bg-white text-slate-600 hover:bg-stone-100'}`;
+                btn.textContent = code;
+                btn.onclick = () => {
+                    state.currentTeam = code;
+                    renderTeamSelector();
+                    renderView();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function getTeamState() {
+            return state.selections[state.currentTeam];
+        }
+
+        function addToXI(playerName) {
+            const teamState = getTeamState();
+            if (teamState.xi.length >= 11) {
+                alert("Playing XI is full (11 players). Remove a player to add a new one.");
+                return;
+            }
+            if (teamState.xi.includes(playerName) || teamState.impact === playerName) return;
+            teamState.xi.push(playerName);
+            renderView();
+        }
+
+        function addToImpact(playerName) {
+            const teamState = getTeamState();
+            if (teamState.impact) {
+                alert("Impact Player slot filled. Remove current impact player first.");
+                return;
+            }
+            if (teamState.xi.includes(playerName)) return;
+            teamState.impact = playerName;
+            renderView();
+        }
+
+        function removeFromXI(playerName) {
+            const teamState = getTeamState();
+            teamState.xi = teamState.xi.filter(p => p !== playerName);
+            renderView();
+        }
+
+        function removeImpact() {
+            const teamState = getTeamState();
+            teamState.impact = null;
+            renderView();
+        }
+
+        function resetBuilder() {
+            const teamState = getTeamState();
+            teamState.xi = [];
+            teamState.impact = null;
+            renderView();
+        }
+
+        function updateAnalytics() {
+            const teamState = getTeamState();
+            const allSelected = [...teamState.xi, teamState.impact].filter(x => x);
+            
+            let counts = { Batter: 0, Bowler: 0, 'All-Rounder': 0, 'WK-Batter': 0 };
+            
+            allSelected.forEach(p => {
+                const role = getRole(p);
+                counts[role] = (counts[role] || 0) + 1;
+            });
+
+            document.getElementById('stat-bat').textContent = counts['Batter'];
+            document.getElementById('stat-bowl').textContent = counts['Bowler'];
+            document.getElementById('stat-all').textContent = counts['All-Rounder'];
+            document.getElementById('stat-wk').textContent = counts['WK-Batter'];
+
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = [counts['Batter'], counts['Bowler'], counts['All-Rounder'], counts['WK-Batter']];
+                chartInstance.update();
+            }
+
+            const statusText = document.getElementById('status-text');
+            const xiCount = teamState.xi.length;
+            const impactCount = teamState.impact ? 1 : 0;
+            
+            document.getElementById('status-xi').textContent = `${xiCount}/11`;
+            document.getElementById('status-impact').textContent = `${impactCount}/1`;
+
+            if (xiCount === 11 && impactCount === 1) {
+                statusText.textContent = "Complete";
+                statusText.className = "font-bold text-green-600";
+            } else {
+                statusText.textContent = "Incomplete";
+                statusText.className = "font-bold text-orange-500";
+            }
+        }
+
+        function renderView() {
+            const teamData = rawData[state.currentTeam];
+            const teamState = getTeamState();
+            
+            document.getElementById('team-name-display').textContent = teamData.name;
+            document.getElementById('team-captain-display').textContent = `Captain: ${teamData.captain}`;
+            document.getElementById('squad-count').textContent = `${teamData.players.length} Players`;
+
+            const squadList = document.getElementById('squad-list');
+            squadList.innerHTML = '';
+            
+            teamData.players.forEach(player => {
+                const isSelected = teamState.xi.includes(player) || teamState.impact === player;
+                const role = getRole(player);
+                
+                const div = document.createElement('div');
+                div.className = `player-card p-3 mb-2 rounded border flex justify-between items-center ${isSelected ? 'bg-stone-100 border-stone-200 opacity-60' : 'bg-white border-stone-200 hover:border-blue-300'}`;
+                div.innerHTML = `
+                    <div>
+                        <div class="font-bold text-sm ${isSelected ? 'text-slate-400' : 'text-slate-800'}">${player}</div>
+                        <div class="text-xs text-slate-500">${role}</div>
+                    </div>
+                    ${!isSelected ? `
+                    <div class="flex gap-1">
+                        <button onclick="addToXI('${player}')" class="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 font-medium" title="Add to XI">XI</button>
+                        <button onclick="addToImpact('${player}')" class="px-2 py-1 bg-yellow-50 text-yellow-600 rounded text-xs hover:bg-yellow-100 font-medium" title="Set as Impact">Imp</button>
+                    </div>` : '<span class="text-xs font-bold text-slate-400">Selected</span>'}
+                `;
+                squadList.appendChild(div);
+            });
+
+            const xiList = document.getElementById('playing-xi-list');
+            xiList.innerHTML = '';
+            
+            teamState.xi.forEach((player, index) => {
+                const role = getRole(player);
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 bg-white rounded border-l-4 border-l-blue-500 shadow-sm border border-stone-100";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-slate-300 font-bold text-lg w-6 text-center">${index + 1}</span>
+                        <div>
+                            <div class="font-bold text-slate-800">${player}</div>
+                            <div class="text-xs text-slate-500">${role}</div>
+                        </div>
+                    </div>
+                    <button onclick="removeFromXI('${player}')" class="text-stone-400 hover:text-red-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                `;
+                xiList.appendChild(div);
+            });
+
+            const emptySlots = 11 - teamState.xi.length;
+            for(let i=0; i<emptySlots; i++) {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 border border-dashed border-stone-300 rounded bg-stone-50/50";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 opacity-50">
+                        <span class="text-stone-300 font-bold text-lg w-6 text-center">${teamState.xi.length + i + 1}</span>
+                        <div class="text-sm font-medium text-stone-400">Empty Slot</div>
+                    </div>
+                `;
+                xiList.appendChild(div);
+            }
+
+            const impactSlot = document.getElementById('impact-player-slot');
+            if (teamState.impact) {
+                const role = getRole(teamState.impact);
+                impactSlot.className = "p-3 bg-yellow-50 rounded border border-yellow-300 flex justify-between items-center shadow-sm";
+                impactSlot.innerHTML = `
+                    <div>
+                        <div class="font-bold text-yellow-900">${teamState.impact}</div>
+                        <div class="text-xs text-yellow-700">${role}</div>
+                    </div>
+                    <button onclick="removeImpact()" class="text-yellow-600 hover:text-yellow-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                `;
+            } else {
+                impactSlot.className = "min-h-[50px] border-2 border-dashed border-yellow-300 rounded-lg flex items-center justify-center text-sm text-yellow-600 bg-yellow-100/50 cursor-pointer hover:bg-yellow-100 transition-colors";
+                impactSlot.innerHTML = "Select an Impact Player from Squad";
+            }
+
+            updateAnalytics();
+        }
+
+        // --- Export Functions ---
+
+        // Prepares the hidden DOM template with data for a specific team
+        function prepareExportTemplate(teamCode) {
+            const team = rawData[teamCode];
+            const sel = state.selections[teamCode];
+            const header = document.getElementById('exp-header');
+            
+            // Apply team specific gradient
+            header.className = `p-6 rounded-xl flex justify-between items-center text-white ${team.colorClass}`;
+            
+            document.getElementById('exp-team-name').textContent = team.name;
+            const managers = document.querySelectorAll('.exp-manager-name');
+            managers.forEach(el => el.textContent = state.managerName);
+
+            // Populate XI
+            const xiList = document.getElementById('exp-xi-list');
+            xiList.innerHTML = '';
+            if(sel.xi.length > 0) {
+                sel.xi.forEach((p, i) => {
+                    const d = document.createElement('div');
+                    d.className = "flex items-center gap-3 p-2 bg-stone-50 rounded border border-stone-100";
+                    d.innerHTML = `<span class="font-bold text-slate-400 w-6">${i+1}</span> <span class="font-bold text-slate-800">${p}</span> <span class="text-xs text-slate-500 ml-auto">${getRole(p)}</span>`;
+                    xiList.appendChild(d);
+                });
+            } else {
+                xiList.innerHTML = '<div class="text-stone-400 italic p-4">No Players Selected</div>';
+            }
+
+            // Populate Impact
+            const impactName = document.getElementById('exp-impact');
+            const impactRole = document.getElementById('exp-impact-role');
+            if(sel.impact) {
+                impactName.textContent = sel.impact;
+                impactName.className = "text-xl font-bold text-slate-800";
+                impactRole.textContent = getRole(sel.impact);
+            } else {
+                impactName.textContent = "Not Selected";
+                impactName.className = "text-xl font-bold text-stone-300 italic";
+                impactRole.textContent = "";
+            }
+
+            // Populate Bench (Everyone else)
+            const benchList = document.getElementById('exp-bench-list');
+            benchList.innerHTML = '';
+            const bench = team.players.filter(p => !sel.xi.includes(p) && p !== sel.impact);
+            bench.forEach(p => {
+                const s = document.createElement('span');
+                s.textContent = p;
+                s.className = "bg-stone-100 px-2 py-1 rounded text-xs inline-block m-0.5 border border-stone-200";
+                benchList.appendChild(s);
+            });
+        }
+
+        function exportCurrentTeam(type) {
+            const teamCode = state.currentTeam;
+            prepareExportTemplate(teamCode);
+            const element = document.getElementById('export-template');
+            const btnStatus = document.getElementById('export-status');
+            
+            btnStatus.textContent = "Generating...";
+            btnStatus.classList.remove('hidden');
+
+            html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
+                if (type === 'image') {
+                    const link = document.createElement('a');
+                    link.download = `${teamCode}_PlayingXI_${state.managerName}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                } else if (type === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgProps = pdf.getImageProperties(imgData);
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    pdf.save(`${teamCode}_PlayingXI_${state.managerName}.pdf`);
+                }
+                btnStatus.classList.add('hidden');
+            });
+        }
+
+        async function exportAllTeams() {
+            const btn = document.getElementById('btn-export-all');
+            const status = document.getElementById('export-status');
+            const originalText = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = `<div class="loader mr-2 border-white border-t-transparent w-4 h-4"></div> Processing...`;
+            status.classList.remove('hidden');
+            status.textContent = "Initializing PDF generation...";
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const teamCodes = Object.keys(rawData);
+
+            try {
+                for (let i = 0; i < teamCodes.length; i++) {
+                    const code = teamCodes[i];
+                    status.textContent = `Generating ${code} (${i+1}/${teamCodes.length})...`;
+                    
+                    prepareExportTemplate(code);
+                    const element = document.getElementById('export-template');
+                    
+                    // Small delay to ensure DOM render
+                    await new Promise(r => setTimeout(r, 100));
+
+                    const canvas = await html2canvas(element, { scale: 1.5, useCORS: true });
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgProps = pdf.getImageProperties(imgData);
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                    if (i > 0) pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+                }
+                
+                status.textContent = "Saving File...";
+                pdf.save(`IPL2026_All_Squads_${state.managerName}.pdf`);
+            } catch (error) {
+                console.error(error);
+                alert("Error generating PDF. Please try again.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                status.classList.add('hidden');
+            }
+        }
+
+        // --- Init ---
+        window.onload = function() {
+            renderTeamSelector();
+            initChart();
+            renderView();
+        };
+
+    </script>
+</body>
+</html>
