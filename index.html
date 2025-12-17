@@ -1,296 +1,427 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPL 2026 Auction Dashboard & Squad Builder</title>
+    <title>IPL 2026 Squad Builder - Neo Edition V2</title>
+
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <!-- HTML2Canvas for screenshots -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;700;900&family=Public+Sans:wght@400;700;800&display=swap"
+        rel="stylesheet">
+
     <style>
-        /* Custom scrollbar for better UI in lists */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #d1d5db;
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #9ca3af;
-        }
-        
-        /* Chart container constraint classes */
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 250px;
-            max-height: 250px;
+        :root {
+            --shadow-offset: 4px;
+            --border-width: 3px;
         }
 
-        .player-card {
-            transition: all 0.2s ease;
+        body {
+            font-family: 'Public Sans', sans-serif;
+            background-color: #f3f4f6;
+            background-image: radial-gradient(#000 1px, transparent 1px);
+            background-size: 20px 20px;
         }
-        .player-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .brand-font {
+            font-family: 'Archivo', sans-serif;
         }
-        
-        /* Dynamic Team Gradients */
-        .team-grad-CSK { background: linear-gradient(135deg, #F9CD05 0%, #F49E0F 100%); color: #000; }
-        .team-grad-MI { background: linear-gradient(135deg, #004BA0 0%, #0077D7 100%); color: #fff; }
-        .team-grad-RCB { background: linear-gradient(135deg, #EC1C24 0%, #2B2B2B 100%); color: #fff; }
-        .team-grad-KKR { background: linear-gradient(135deg, #3A225D 0%, #B3A123 100%); color: #fff; }
-        .team-grad-SRH { background: linear-gradient(135deg, #F76419 0%, #303030 100%); color: #fff; }
-        .team-grad-LSG { background: linear-gradient(135deg, #0084CA 0%, #30EFCE 100%); color: #fff; }
-        .team-grad-GT { background: linear-gradient(135deg, #1B2133 0%, #B79858 100%); color: #fff; }
-        .team-grad-RR { background: linear-gradient(135deg, #EB839D 0%, #254AA5 100%); color: #fff; }
-        .team-grad-DC { background: linear-gradient(135deg, #0078BC 0%, #EF1B23 100%); color: #fff; }
-        .team-grad-PBKS { background: linear-gradient(135deg, #DD1F2D 0%, #A7A9AC 100%); color: #fff; }
+
+        /* Neo-Brutalism Components */
+        .neo-box {
+            background: white;
+            border: var(--border-width) solid black;
+            box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px black;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .neo-btn {
+            border: var(--border-width) solid black;
+            box-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px black;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.1s;
+        }
+
+        .neo-btn:hover:not(:disabled) {
+            transform: translate(-1px, -1px);
+            box-shadow: calc(var(--shadow-offset) + 2px) calc(var(--shadow-offset) + 2px) 0px 0px black;
+        }
+
+        .neo-btn:active:not(:disabled) {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px 0px black;
+        }
+
+        .neo-btn:disabled {
+            background-color: #fde047;
+            /* Yellowish disabled state */
+            color: #9ca3af;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: translate(var(--shadow-offset), var(--shadow-offset));
+        }
+
+        .neo-input {
+            border: var(--border-width) solid black;
+            padding: 0.5rem;
+            outline: none;
+            box-shadow: 2px 2px 0px 0px black;
+            transition: box-shadow 0.2s;
+        }
+
+        .neo-input:focus {
+            box-shadow: 4px 4px 0px 0px black;
+        }
+
+        /* Draggable Styles */
+        .draggable-item {
+            cursor: grab;
+        }
+
+        .draggable-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+            border-style: dashed;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #fff;
+            border-left: 2px solid black;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #000;
+            border: 2px solid #fff;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #333;
+        }
 
         /* Loader */
         .loader {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border-top: 4px solid #000;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-    <!-- Chosen Palette: Warm Neutrals for background (Stone-50), White for cards, Slate for text. Dynamic vivid gradients for Team Identities. -->
-</head>
-<body class="bg-stone-50 text-slate-800 font-sans min-h-screen flex flex-col">
 
-    <!-- Header Section -->
-    <header class="bg-white border-b border-stone-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900">IPL 2026 Auction <span class="text-blue-600">Squad Builder</span></h1>
-                    <p class="text-xs text-slate-400 mt-1">Made by Reyansh Varshney</p>
-                    <div class="flex items-center gap-2 mt-1">
-                        <label class="text-sm text-slate-500">Manager Name:</label>
-                        <input type="text" id="manager-name-input" placeholder="Enter your name" class="border border-stone-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500" oninput="updateManagerName(this.value)">
-                    </div>
-                </div>
-                <div class="bg-stone-100 rounded-lg p-3 flex gap-4 text-xs md:text-sm">
-                    <div class="text-center border-r border-stone-300 pr-4">
-                        <span class="block font-bold text-green-600">₹25.2 Cr</span>
-                        <span class="text-slate-500">Cameron Green</span>
-                    </div>
-                    <div class="text-center border-r border-stone-300 pr-4">
-                        <span class="block font-bold text-blue-600">₹14.2 Cr</span>
-                        <span class="text-slate-500">Prashant Veer</span>
-                    </div>
-                    <div class="text-center">
-                        <span class="block font-bold text-slate-700">10 Teams</span>
-                        <span class="text-slate-500">77 Slots Filled</span>
-                    </div>
-                </div>
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Hidden Export container */
+        #export-container-wrapper {
+            position: absolute;
+            top: 0;
+            left: -9999px;
+            z-index: 50;
+            /* Ensure it is above other elements when visible */
+            width: 1200px;
+            /* Fixed rendering width */
+            pointer-events: none;
+            /* User can't interact */
+        }
+
+        /* Ensure template captures well */
+        #export-template {
+            width: 100%;
+            background: white;
+            min-height: 800px;
+        }
+    </style>
+</head>
+
+<body class="text-black min-h-screen flex flex-col p-4 md:p-8">
+
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto w-full mb-8">
+        <div class="neo-box p-6 flex flex-col md:flex-row justify-between items-center gap-6 bg-yellow-300">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-black uppercase tracking-tighter italic">IPL 2026 <span
+                        class="text-white bg-black px-2">Squad Builder</span></h1>
+                <p class="font-bold text-sm mt-2 tracking-widest uppercase opacity-80">Mega Auction Edition • Made by
+                    Reyansh</p>
+            </div>
+
+            <div class="flex flex-col gap-2 w-full md:w-auto">
+                <label class="font-black text-xs uppercase">Manager Name</label>
+                <input type="text" id="manager-name" placeholder="YOUR NAME"
+                    class="neo-input font-bold uppercase w-full md:w-64" oninput="updateManagerName(this.value)">
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 py-6 w-full gap-6 flex flex-col">
+    <!-- Main App -->
+    <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow">
 
-        <!-- Team Selector -->
-        <nav class="w-full overflow-x-auto pb-2 custom-scrollbar">
-            <div class="flex gap-3 min-w-max" id="team-selector-container">
-                <!-- JS will populate buttons here -->
-            </div>
-        </nav>
+        <!-- Left: Team Selector & Squad -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
 
-        <!-- Builder Interface -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            <!-- Left Col: Squad Selection -->
-            <div class="lg:col-span-4 flex flex-col gap-4">
-                <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden h-[650px] flex flex-col">
-                    <div class="p-4 border-b border-stone-200 bg-stone-50">
-                        <h3 class="font-bold text-lg flex justify-between items-center">
-                            Full Squad
-                            <span class="text-xs font-normal bg-stone-200 px-2 py-1 rounded-full text-stone-600" id="squad-count">0 Players</span>
-                        </h3>
-                        <p class="text-xs text-stone-500 mt-1">Click + to add to Playing XI</p>
-                    </div>
-                    <div class="flex-grow overflow-y-auto p-2 custom-scrollbar" id="squad-list">
-                        <!-- Player List -->
-                    </div>
+            <!-- Team Selector -->
+            <div class="neo-box p-4 bg-white">
+                <h2 class="font-black text-xl uppercase mb-4 border-b-2 border-black pb-2">Select Team</h2>
+                <div class="grid grid-cols-5 gap-2" id="team-selector">
+                    <!-- Buttons generated by JS -->
                 </div>
             </div>
 
-            <!-- Center Col: Playing XI Display -->
-            <div class="lg:col-span-5 flex flex-col gap-4">
-                <div class="bg-white rounded-xl shadow-sm border border-stone-200 min-h-[650px] flex flex-col relative overflow-hidden">
-                    
-                    <!-- Pitch Background Effect -->
-                    <div class="absolute inset-0 bg-green-50 opacity-50 pointer-events-none"></div>
-                    <div class="absolute inset-x-12 top-0 bottom-0 border-x-2 border-dashed border-green-100 pointer-events-none"></div>
+            <!-- Squad List -->
+            <div class="neo-box p-0 bg-white flex flex-col h-[600px] overflow-hidden">
+                <div class="p-4 bg-black text-white flex justify-between items-center border-b-2 border-black">
+                    <h2 class="font-black text-lg uppercase tracking-wide">Available Squad</h2>
+                    <span id="squad-count" class="bg-white text-black text-xs font-bold px-2 py-1 border border-white">0
+                        Players</span>
+                </div>
+                <div id="loading-squad" class="hidden p-8 text-center font-bold">Loading...</div>
+                <div id="squad-list" class="flex-1 overflow-y-auto p-4 space-y-3">
+                    <!-- Squad Items -->
+                </div>
+            </div>
+        </div>
 
-                    <div class="p-4 border-b border-stone-200 bg-white/80 backdrop-blur-sm z-10 flex justify-between items-center">
-                        <div>
-                            <h3 class="font-bold text-lg"><span class="dynamic-manager-name">My</span> Playing XI</h3>
-                            <p class="text-xs text-stone-500">Select 11 Players</p>
+        <!-- Center: Playground (Playing XI) -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+
+            <!-- Pitch / Board -->
+            <div class="neo-box p-0 bg-white min-h-[700px] flex flex-col relative overflow-hidden">
+                <!-- Header -->
+                <div class="p-4 border-b-2 border-black bg-blue-100 flex justify-between items-center z-10">
+                    <div>
+                        <h2 class="font-black text-2xl uppercase"><span class="dynamic-manager-name">MY</span> PLAN</h2>
+                        <div class="flex gap-2 text-xs font-bold mt-1">
+                            <span id="xi-status" class="bg-red-500 text-white px-2 py-0.5 border border-black">0/11
+                                Selected</span>
+                            <span id="impact-status"
+                                class="bg-gray-300 text-black px-2 py-0.5 border border-black opacity-50">Impact
+                                Missing</span>
                         </div>
-                        <button onclick="resetBuilder()" class="text-xs text-red-500 hover:text-red-700 font-medium underline">Reset XI</button>
+                    </div>
+                    <button onclick="resetTeam()"
+                        class="neo-btn bg-red-500 text-white px-4 py-2 text-xs hover:bg-red-600">Reset</button>
+                </div>
+
+                <!-- Canvas -->
+                <div class="flex-1 p-4 bg-gray-50 relative overflow-y-auto" id="playing-xi-container">
+                    <div class="absolute inset-0 opacity-5 pointer-events-none"
+                        style="background-image: repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%); background-size: 20px 20px;">
                     </div>
 
-                    <div class="flex-grow p-4 z-10 flex flex-col gap-2 overflow-y-auto custom-scrollbar" id="playing-xi-list">
-                        <!-- Selected Players -->
+                    <!-- Playing XI List (Draggable) -->
+                    <div id="playing-xi-list" class="space-y-3 relative z-10 pb-8">
+                        <!-- Items go here -->
+                        <div class="text-center p-8 opacity-40 font-black text-2xl uppercase select-none">
+                            Select players from the left<br>to build your XI
+                        </div>
                     </div>
 
-                    <!-- Impact Player Slot -->
-                    <div class="p-4 border-t border-stone-200 bg-yellow-50/80 z-10">
-                        <h4 class="text-xs font-bold text-yellow-800 uppercase tracking-wider mb-2">Impact Player</h4>
-                        <div id="impact-player-slot" class="min-h-[50px] border-2 border-dashed border-yellow-300 rounded-lg flex items-center justify-center text-sm text-yellow-600 bg-yellow-100/50">
-                            Select 1 Impact Player
+                    <!-- Impact Player Section -->
+                    <div class="mt-8 border-t-2 border-dashed border-black pt-6 relative z-10">
+                        <div
+                            class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-300 px-3 py-1 font-black text-xs border border-black uppercase rotate-2">
+                            Impact Player
                         </div>
+                        <div id="impact-slot" class="min-h-[80px]">
+                            <!-- Impact Player or Placeholder -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Info -->
+                <div class="bg-black text-white p-2 text-center text-xs font-mono uppercase tracking-widest">
+                    Drag to Reorder • Click Note to Edit • Click Star for Captain
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Stats & Export -->
+        <div class="lg:col-span-3 flex flex-col gap-6">
+
+            <!-- Team Card -->
+            <div class="neo-box p-6 text-center" id="team-info-card">
+                <h2 class="font-black text-3xl uppercase mb-1" id="team-name-display">Team</h2>
+                <div class="inline-block bg-black text-white px-3 py-1 font-bold text-sm uppercase mb-4"
+                    id="team-captain-default">Capt: -</div>
+                <div class="text-xs font-bold text-gray-500 uppercase mb-2">Selected Captain</div>
+                <div class="text-xl font-black uppercase" id="team-captain-display">-</div>
+
+                <div class="grid grid-cols-2 gap-4 text-left mt-4">
+                    <div class="bg-gray-100 p-2 border border-black">
+                        <div class="text-xs font-bold text-gray-500 uppercase">Balance</div>
+                        <div class="font-black text-lg" id="purse-display">₹25Cr</div>
+                    </div>
+                    <div class="bg-gray-100 p-2 border border-black">
+                        <div class="text-xs font-bold text-gray-500 uppercase">Slots</div>
+                        <div class="font-black text-lg" id="slots-display">25/25</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Col: Analytics & Export -->
-            <div class="lg:col-span-3 flex flex-col gap-4">
-                
-                <!-- Team Info Card -->
-                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
-                    <h3 class="font-bold text-slate-800 mb-2" id="team-name-display">Select a Team</h3>
-                    <p class="text-sm text-slate-500" id="team-captain-display">Captain: -</p>
+            <!-- Analytics -->
+            <div class="neo-box p-4 bg-white">
+                <h3 class="font-black text-sm uppercase mb-4">Composition</h3>
+                <div class="h-48 relative">
+                    <canvas id="compositionChart"></canvas>
                 </div>
-
-                <!-- Analysis Chart -->
-                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-4 flex flex-col items-center">
-                    <h3 class="font-bold text-sm text-slate-700 mb-4 w-full text-left">Squad Composition</h3>
-                    <div class="chart-container">
-                        <canvas id="compositionChart"></canvas>
+                <div class="grid grid-cols-4 gap-1 mt-4 text-center">
+                    <div class="p-1 bg-blue-100 border border-black rounded-sm">
+                        <div class="text-[10px] font-bold">BAT</div>
+                        <div class="font-black" id="stat-bat">0</div>
                     </div>
-                    <div class="mt-4 grid grid-cols-2 gap-2 w-full text-xs text-center">
-                        <div class="bg-blue-50 p-2 rounded text-blue-800">
-                            <span class="block font-bold text-lg" id="stat-bat">0</span> Batters
-                        </div>
-                        <div class="bg-green-50 p-2 rounded text-green-800">
-                            <span class="block font-bold text-lg" id="stat-all">0</span> All-Rounders
-                        </div>
-                        <div class="bg-red-50 p-2 rounded text-red-800">
-                            <span class="block font-bold text-lg" id="stat-bowl">0</span> Bowlers
-                        </div>
-                        <div class="bg-purple-50 p-2 rounded text-purple-800">
-                            <span class="block font-bold text-lg" id="stat-wk">0</span> WKs
-                        </div>
+                    <div class="p-1 bg-red-100 border border-black rounded-sm">
+                        <div class="text-[10px] font-bold">BOWL</div>
+                        <div class="font-black" id="stat-bowl">0</div>
                     </div>
-                </div>
-
-                <!-- Export Section -->
-                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
-                    <h3 class="font-bold text-sm text-slate-700 mb-3">Export Options</h3>
-                    <div class="flex flex-col gap-2">
-                        <button onclick="exportCurrentTeam('image')" class="flex items-center justify-center gap-2 w-full py-2 bg-slate-800 text-white rounded hover:bg-slate-700 text-sm font-medium transition-colors">
-                            <span>📷</span> Save as Image
-                        </button>
-                        <button onclick="exportCurrentTeam('pdf')" class="flex items-center justify-center gap-2 w-full py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium transition-colors">
-                            <span>📄</span> Save as PDF
-                        </button>
-                        <div class="h-px bg-stone-200 my-1"></div>
-                        <button onclick="exportAllTeams()" id="btn-export-all" class="flex items-center justify-center gap-2 w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium transition-colors">
-                            <span>📚</span> Export All Teams (PDF)
-                        </button>
-                        <div id="export-status" class="text-xs text-center text-slate-500 mt-1 hidden">Generating...</div>
+                    <div class="p-1 bg-green-100 border border-black rounded-sm">
+                        <div class="text-[10px] font-bold">AR</div>
+                        <div class="font-black" id="stat-ar">0</div>
                     </div>
-                </div>
-
-                <!-- Status Check -->
-                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
-                    <h3 class="font-bold text-sm text-slate-700 mb-2">Team Status</h3>
-                    <ul class="space-y-2 text-sm">
-                        <li class="flex justify-between">
-                            <span class="text-slate-500">Playing XI:</span>
-                            <span class="font-bold" id="status-xi">0/11</span>
-                        </li>
-                        <li class="flex justify-between">
-                            <span class="text-slate-500">Impact Player:</span>
-                            <span class="font-bold" id="status-impact">0/1</span>
-                        </li>
-                        <li class="flex justify-between mt-2 pt-2 border-t border-stone-100">
-                            <span class="text-slate-500">Status:</span>
-                            <span class="font-bold text-orange-500" id="status-text">Incomplete</span>
-                        </li>
-                    </ul>
+                    <div class="p-1 bg-purple-100 border border-black rounded-sm">
+                        <div class="text-[10px] font-bold">WK</div>
+                        <div class="font-black" id="stat-wk">0</div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Export Actions -->
+            <div class="neo-box p-4 bg-purple-200">
+                <h3 class="font-black text-sm uppercase mb-3">Share Squad</h3>
+                <div class="flex flex-col gap-3">
+                    <button onclick="exportSquad('image')"
+                        class="neo-btn w-full bg-white py-3 text-sm hover:bg-gray-100 flex items-center justify-center gap-2">
+                        <span>📸</span> Download Image
+                    </button>
+                    <button onclick="exportSquad('pdf')"
+                        class="neo-btn w-full bg-white py-3 text-sm hover:bg-gray-100 flex items-center justify-center gap-2">
+                        <span>📄</span> Download PDF
+                    </button>
+                    <div class="h-0.5 bg-black opacity-10 my-1"></div>
+                    <button onclick="exportAllSquads()" id="btn-export-all"
+                        class="neo-btn w-full bg-black text-white py-3 text-sm hover:bg-gray-800 flex items-center justify-center gap-2">
+                        <span>📚</span> Export All Teams
+                    </button>
+                </div>
+            </div>
+
         </div>
 
     </main>
 
-    <!-- HIDDEN EXPORT TEMPLATE -->
-    <!-- This container is populated by JS, rendered off-screen, then captured -->
-    <div id="export-container-wrapper" class="fixed top-0 left-0 w-[800px] pointer-events-none opacity-0 -z-50">
-        <div id="export-template" class="w-[800px] bg-white p-8 flex flex-col gap-6 font-sans">
-            <!-- Export Header -->
-            <div id="exp-header" class="p-6 rounded-xl flex justify-between items-center text-white">
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto w-full mt-8 mb-4 text-center">
+        <p class="font-bold text-sm opacity-50 uppercase">Designed with Neo-Brutalism • IPL 2026 Dashboard</p>
+    </footer>
+
+
+    <!-- TEMPLATE FOR EXPORTS -->
+    <div id="export-container-wrapper">
+        <div id="export-template" class="border-4 border-black font-sans p-8 relative flex flex-col justify-between">
+            <!-- Decorative Back -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-current opacity-10 rounded-bl-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                id="exp-bg-decor"></div>
+
+            <!-- Header -->
+            <div class="flex justify-between items-end border-b-4 border-black pb-4 mb-6">
                 <div>
-                    <h1 class="text-3xl font-bold" id="exp-team-name">Team Name</h1>
-                    <h2 class="text-xl opacity-90 mt-1"><span class="exp-manager-name">User</span>'s Playing XI</h2>
+                    <h1 class="text-6xl font-black uppercase italic tracking-tighter leading-none" id="exp-team-name">
+                        TEAM NAME</h1>
+                    <div class="mt-4 flex items-center gap-4">
+                        <span class="bg-black text-white px-3 py-1 text-xl font-bold uppercase whitespace-nowrap"><span
+                                class="exp-manager-name">MY</span> PLAN</span>
+                        <span class="text-xl font-bold uppercase tracking-widest opacity-60">Season 2026</span>
+                    </div>
                 </div>
                 <div class="text-right">
-                    <div class="text-4xl font-black opacity-20">IPL 2026</div>
-                    <div class="text-sm font-medium opacity-80 uppercase tracking-widest">Official Squad</div>
+                    <div class="text-9xl font-black opacity-5 leading-none absolute right-4 top-4">XI</div>
                 </div>
             </div>
 
-            <!-- Export Body -->
-            <div class="grid grid-cols-2 gap-8">
-                <!-- Left: Playing XI -->
-                <div class="flex flex-col gap-2">
-                    <h3 class="text-lg font-bold text-slate-800 border-b-2 border-slate-200 pb-2 mb-2">Playing XI</h3>
-                    <div id="exp-xi-list" class="flex flex-col gap-1">
-                        <!-- Items injected here -->
+            <div class="grid grid-cols-2 gap-12 flex-1">
+                <!-- Left: XI -->
+                <div class="flex flex-col">
+                    <h3 class="text-2xl font-black uppercase mb-4 border-b-2 border-black pb-2 inline-block">Playing XI
+                    </h3>
+                    <div class="flex flex-col gap-2" id="exp-xi-list">
+                        <!-- Injected Content -->
                     </div>
                 </div>
 
-                <!-- Right: Impact & Bench -->
-                <div class="flex flex-col gap-6">
-                    <!-- Impact -->
-                    <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-xl">
-                        <h3 class="text-sm font-bold text-yellow-800 uppercase tracking-wider mb-2">Impact Player</h3>
-                        <div id="exp-impact" class="text-xl font-bold text-slate-800">Not Selected</div>
-                        <div id="exp-impact-role" class="text-sm text-slate-500"></div>
-                    </div>
+                <!-- Right: Analysis & Impact -->
+                <div class="flex flex-col gap-8">
 
-                    <!-- Bench -->
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-800 border-b-2 border-slate-200 pb-2 mb-2">Bench</h3>
-                        <div id="exp-bench-list" class="grid grid-cols-1 gap-1 text-sm text-slate-600">
-                            <!-- Items injected here -->
+                    <!-- Impact Box -->
+                    <div class="border-4 border-black p-6 bg-yellow-300 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                        <h4 class="font-black text-sm uppercase tracking-widest mb-1 opacity-70">Impact Player Strategy
+                        </h4>
+                        <div id="exp-impact-display">
+                            <div class="text-3xl font-black uppercase">None Selected</div>
                         </div>
                     </div>
+
+                    <!-- Composition Grid -->
+                    <div>
+                        <h3 class="text-xl font-black uppercase mb-4 border-b-2 border-black pb-2">Squad Balance</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="border-2 border-black p-4 bg-gray-50">
+                                <div class="text-4xl font-black" id="exp-stat-bat">0</div>
+                                <div class="text-xs font-bold uppercase text-gray-500">Batters</div>
+                            </div>
+                            <div class="border-2 border-black p-4 bg-gray-50">
+                                <div class="text-4xl font-black" id="exp-stat-ab">0</div>
+                                <div class="text-xs font-bold uppercase text-gray-500">Bowlers/AR</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Captain Box -->
+                    <div class="mt-auto text-right mb-4">
+                        <div class="text-sm font-bold uppercase opacity-50">Leadership</div>
+                        <div class="text-4xl font-black uppercase" id="exp-captain">TBD</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Export Footer -->
-            <div class="mt-4 pt-4 border-t border-stone-200 flex justify-between text-xs text-slate-400">
-                <span>Generated via IPL 2026 Squad Builder</span>
-                <span>Season 2026 • Abu Dhabi Auction</span>
+            <!-- Footer -->
+            <div
+                class="mt-6 pt-4 border-t-2 border-dashed border-gray-300 flex justify-between text-sm font-bold text-gray-400 uppercase">
+                <span>Created via IPL 2026 Builder</span>
+                <span>Date: <span id="exp-date"></span></span>
             </div>
         </div>
     </div>
 
+    <!-- MAIN SCRIPT -->
     <script>
-        // --- Data Handling ---
-        
-        // Extended and Corrected Role Map
+        // --- DATA & CONFIG ---
+
+        // Copied from original file
         const roleMap = {
             // WK-Batters
             'Rishabh Pant': 'WK-Batter', 'Nicholas Pooran': 'WK-Batter', 'KL Rahul': 'WK-Batter', 'M.S. Dhoni': 'WK-Batter',
@@ -355,8 +486,7 @@
         function getRole(name) {
             if (roleMap[name]) return roleMap[name];
             if (name.includes("Keep") || name.includes("WK")) return "WK-Batter";
-            // Fallback for names not found, but try to be smarter or default to AR
-            return "All-Rounder"; 
+            return "All-Rounder"; // Default Fallback
         }
 
         const rawData = {
@@ -372,381 +502,591 @@
             "GT": { name: "Gujarat Titans", colorClass: "team-grad-GT", colorHex: "#1B2133", captain: "Shubman Gill", players: ["Shubman Gill", "Sai Sudharsan", "Kumar Kushagra", "Anuj Rawat", "Jos Buttler", "Nishant Sindhu", "Washington Sundar", "Glenn Phillips", "Arshad Khan", "Shahrukh Khan", "Rahul Tewatia", "Kagiso Rabada", "Mohammed Siraj", "Prasidh Krishna", "Ishant Sharma", "Gurnoor Singh Brar", "Rashid Khan", "Manav Suthar", "Sai Kishore", "Jayant Yadav", "Ashok Sharma", "Jason Holder", "Tom Banton", "Prithvi Raj Yarra", "Luke Wood"] }
         };
 
-        // --- Application State ---
-        let state = {
+        // --- STATE ---
+        let APP_STATE = {
+            managerName: "MY",
             currentTeam: "CSK",
-            managerName: "My",
-            selections: {}
+            teams: {} // { "CSK": { xi: [], impact: null, captain: null, notes: {} } }
         };
 
-        // Initialize Selections State
-        Object.keys(rawData).forEach(team => {
-            state.selections[team] = { xi: [], impact: null };
+        // Init State
+        Object.keys(rawData).forEach(code => {
+            const teamInfo = rawData[code];
+            APP_STATE.teams[code] = {
+                xi: [],
+                impact: null,
+                captain: teamInfo.captain,
+                notes: {}
+            };
         });
 
-        // --- Chart Config ---
+        // --- CHART ---
         let chartInstance = null;
 
         function initChart() {
             const ctx = document.getElementById('compositionChart').getContext('2d');
+            Chart.defaults.font.family = 'Public Sans';
+            Chart.defaults.color = '#000';
+
             chartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Batters', 'Bowlers', 'All-Rounders', 'Wicketkeepers'],
+                    labels: ['BAT', 'BOWL', 'AR', 'WK'],
                     datasets: [{
                         data: [0, 0, 0, 0],
                         backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#a855f7'],
-                        borderWidth: 0,
-                        hoverOffset: 4
+                        borderColor: '#000000',
+                        borderWidth: 2,
+                        hoverOffset: 10
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    cutout: '60%',
                     plugins: {
-                        legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
+                        legend: { position: 'right', labels: { boxWidth: 10, font: { weight: 'bold' } } }
                     }
                 }
             });
         }
 
-        // --- Core Functions ---
+        // --- LOGIC ---
 
         function updateManagerName(val) {
-            state.managerName = val.trim() === "" ? "My" : val;
-            const elements = document.querySelectorAll('.dynamic-manager-name');
-            elements.forEach(el => el.textContent = state.managerName);
+            APP_STATE.managerName = val.trim() || "MY";
+            document.querySelectorAll('.dynamic-manager-name').forEach(el => el.textContent = APP_STATE.managerName);
+        }
+
+        function switchTeam(code) {
+            APP_STATE.currentTeam = code;
+            renderAll();
+        }
+
+        function getTeam() {
+            return APP_STATE.teams[APP_STATE.currentTeam];
+        }
+
+        function addPlayer(name) {
+            const t = getTeam();
+            // Check if already in
+            if (t.xi.includes(name) || t.impact === name) return;
+
+            if (t.xi.length < 11) {
+                t.xi.push(name);
+                // Auto set captain if none
+                if (!t.captain) t.captain = name;
+            } else if (!t.impact) {
+                if (confirm("XI is full. Add as Impact Player?")) {
+                    t.impact = name;
+                }
+            } else {
+                alert("Squad Full! Remove a player first.");
+            }
+            renderAll();
+        }
+
+        function removePlayer(name, isImpact = false) {
+            const t = getTeam();
+            const originalData = rawData[APP_STATE.currentTeam];
+
+            if (isImpact) {
+                t.impact = null;
+            } else {
+                t.xi = t.xi.filter(p => p !== name);
+                // If we removed the captain, reset to default or first player
+                if (t.captain === name) {
+                    // Try to revert to original captain if available in squad, else first player
+                    if (t.xi.includes(originalData.captain)) {
+                        t.captain = originalData.captain;
+                    } else {
+                        t.captain = t.xi.length > 0 ? t.xi[0] : null;
+                    }
+                }
+            }
+            renderAll();
+        }
+
+        function setCaptain(name) {
+            const t = getTeam();
+            t.captain = name;
+            renderAll();
+        }
+
+        function editNote(name) {
+            const t = getTeam();
+            const current = t.notes[name] || "";
+            const newVal = prompt(`Note for ${name}:`, current);
+            if (newVal !== null) {
+                t.notes[name] = newVal;
+                renderAll();
+            }
+        }
+
+        function resetTeam() {
+            if (!confirm("Clear this playing XI?")) return;
+            const t = getTeam();
+            const originalData = rawData[APP_STATE.currentTeam];
+            t.xi = [];
+            t.impact = null;
+            t.captain = originalData.captain;
+            t.notes = {};
+            renderAll();
+        }
+
+        // --- DRAG & DROP ---
+        let dragSrcIndex = null;
+
+        function handleDragStart(e, index) {
+            dragSrcIndex = index;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDrop(e, dropIndex) {
+            if (e.stopPropagation) e.stopPropagation();
+            const t = getTeam();
+            if (dragSrcIndex !== null && dragSrcIndex !== dropIndex) {
+                // Move item
+                const item = t.xi.splice(dragSrcIndex, 1)[0];
+                t.xi.splice(dropIndex, 0, item);
+                renderAll();
+            }
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        // --- RENDERERS ---
+
+        function renderAll() {
+            renderTeamSelector();
+            renderSquadList();
+            renderPlayingXI();
+            renderStats();
         }
 
         function renderTeamSelector() {
-            const container = document.getElementById('team-selector-container');
+            const container = document.getElementById('team-selector');
             container.innerHTML = '';
-            
+
             Object.keys(rawData).forEach(code => {
-                const team = rawData[code];
+                const isActive = APP_STATE.currentTeam === code;
+                const d = rawData[code];
+
                 const btn = document.createElement('button');
-                btn.className = `flex-shrink-0 px-4 py-2 rounded-lg font-bold text-sm transition-all ${state.currentTeam === code ? `${team.colorClass} shadow-md transform scale-105` : 'bg-white text-slate-600 hover:bg-stone-100'}`;
+                btn.className = `neo-btn py-2 text-sm font-black transition-transform ${isActive ? 'scale-110 z-10 border-black' : 'opacity-60 hover:opacity-100'}`;
+                btn.style.backgroundColor = d.colorHex;
+                // Simple contrast logic
+                const isDark = ['MI', 'KKR', 'GT', 'DC', 'RCB', 'PBKS'].includes(code);
+                btn.style.color = isActive ? (isDark ? 'white' : 'black') : (isDark ? 'white' : 'black');
+
                 btn.textContent = code;
-                btn.onclick = () => {
-                    state.currentTeam = code;
-                    renderTeamSelector();
-                    renderView();
-                };
+                btn.onclick = () => switchTeam(code);
                 container.appendChild(btn);
             });
+
+            // Update Header Info
+            const currentData = rawData[APP_STATE.currentTeam];
+            const title = document.getElementById('team-name-display');
+            title.textContent = currentData.name;
+            title.className = `font-black text-3xl uppercase mb-1 ${currentData.colorClass.replace('team-grad-', 'text-')}`;
+            // Hack for color since we don't have text classes, we use style or valid tailwind if available. 
+            // The logic from rawData uses custom classes like 'team-grad-CSK' which are gradients.
+            // Let's manually set color for better text visibility
+            title.style.color = currentData.colorHex;
+
+            document.getElementById('team-captain-default').textContent = `Default: ${currentData.captain}`;
         }
 
-        function getTeamState() {
-            return state.selections[state.currentTeam];
-        }
+        function renderSquadList() {
+            const list = document.getElementById('squad-list');
+            list.innerHTML = '';
 
-        function addToXI(playerName) {
-            const teamState = getTeamState();
-            if (teamState.xi.length >= 11) {
-                alert("Playing XI is full (11 players). Remove a player to add a new one.");
-                return;
-            }
-            if (teamState.xi.includes(playerName) || teamState.impact === playerName) return;
-            teamState.xi.push(playerName);
-            renderView();
-        }
+            const t = getTeam();
+            const allPlayers = rawData[APP_STATE.currentTeam].players;
 
-        function addToImpact(playerName) {
-            const teamState = getTeamState();
-            if (teamState.impact) {
-                alert("Impact Player slot filled. Remove current impact player first.");
-                return;
-            }
-            if (teamState.xi.includes(playerName)) return;
-            teamState.impact = playerName;
-            renderView();
-        }
-
-        function removeFromXI(playerName) {
-            const teamState = getTeamState();
-            teamState.xi = teamState.xi.filter(p => p !== playerName);
-            renderView();
-        }
-
-        function removeImpact() {
-            const teamState = getTeamState();
-            teamState.impact = null;
-            renderView();
-        }
-
-        function resetBuilder() {
-            const teamState = getTeamState();
-            teamState.xi = [];
-            teamState.impact = null;
-            renderView();
-        }
-
-        function updateAnalytics() {
-            const teamState = getTeamState();
-            const allSelected = [...teamState.xi, teamState.impact].filter(x => x);
-            
-            let counts = { Batter: 0, Bowler: 0, 'All-Rounder': 0, 'WK-Batter': 0 };
-            
-            allSelected.forEach(p => {
+            allPlayers.forEach(p => {
+                const isSelected = t.xi.includes(p) || t.impact === p;
                 const role = getRole(p);
-                counts[role] = (counts[role] || 0) + 1;
-            });
 
-            document.getElementById('stat-bat').textContent = counts['Batter'];
-            document.getElementById('stat-bowl').textContent = counts['Bowler'];
-            document.getElementById('stat-all').textContent = counts['All-Rounder'];
-            document.getElementById('stat-wk').textContent = counts['WK-Batter'];
-
-            if (chartInstance) {
-                chartInstance.data.datasets[0].data = [counts['Batter'], counts['Bowler'], counts['All-Rounder'], counts['WK-Batter']];
-                chartInstance.update();
-            }
-
-            const statusText = document.getElementById('status-text');
-            const xiCount = teamState.xi.length;
-            const impactCount = teamState.impact ? 1 : 0;
-            
-            document.getElementById('status-xi').textContent = `${xiCount}/11`;
-            document.getElementById('status-impact').textContent = `${impactCount}/1`;
-
-            if (xiCount === 11 && impactCount === 1) {
-                statusText.textContent = "Complete";
-                statusText.className = "font-bold text-green-600";
-            } else {
-                statusText.textContent = "Incomplete";
-                statusText.className = "font-bold text-orange-500";
-            }
-        }
-
-        function renderView() {
-            const teamData = rawData[state.currentTeam];
-            const teamState = getTeamState();
-            
-            document.getElementById('team-name-display').textContent = teamData.name;
-            document.getElementById('team-captain-display').textContent = `Captain: ${teamData.captain}`;
-            document.getElementById('squad-count').textContent = `${teamData.players.length} Players`;
-
-            const squadList = document.getElementById('squad-list');
-            squadList.innerHTML = '';
-            
-            teamData.players.forEach(player => {
-                const isSelected = teamState.xi.includes(player) || teamState.impact === player;
-                const role = getRole(player);
-                
                 const div = document.createElement('div');
-                div.className = `player-card p-3 mb-2 rounded border flex justify-between items-center ${isSelected ? 'bg-stone-100 border-stone-200 opacity-60' : 'bg-white border-stone-200 hover:border-blue-300'}`;
+                div.className = `neo-box p-3 flex justify-between items-center ${isSelected ? 'bg-gray-200 opacity-50' : 'bg-white hover:translate-x-1'}`;
+
                 div.innerHTML = `
                     <div>
-                        <div class="font-bold text-sm ${isSelected ? 'text-slate-400' : 'text-slate-800'}">${player}</div>
-                        <div class="text-xs text-slate-500">${role}</div>
+                        <div class="font-bold text-sm uppercase">${p}</div>
+                        <div class="text-[10px] font-black bg-black text-white px-1 w-fit rounded-sm">${role}</div>
                     </div>
-                    ${!isSelected ? `
-                    <div class="flex gap-1">
-                        <button onclick="addToXI('${player}')" class="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 font-medium" title="Add to XI">XI</button>
-                        <button onclick="addToImpact('${player}')" class="px-2 py-1 bg-yellow-50 text-yellow-600 rounded text-xs hover:bg-yellow-100 font-medium" title="Set as Impact">Imp</button>
-                    </div>` : '<span class="text-xs font-bold text-slate-400">Selected</span>'}
+                    ${!isSelected ? `<button onclick="addPlayer('${p}')" class="neo-btn px-2 py-1 text-xs bg-black text-white hover:bg-gray-800">+</button>` : '<span class="text-xs font-bold">✓</span>'}
                 `;
-                squadList.appendChild(div);
+                list.appendChild(div);
             });
 
-            const xiList = document.getElementById('playing-xi-list');
-            xiList.innerHTML = '';
-            
-            teamState.xi.forEach((player, index) => {
-                const role = getRole(player);
-                const div = document.createElement('div');
-                div.className = "flex items-center justify-between p-3 bg-white rounded border-l-4 border-l-blue-500 shadow-sm border border-stone-100";
-                div.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="text-slate-300 font-bold text-lg w-6 text-center">${index + 1}</span>
+            document.getElementById('squad-count').textContent = `${allPlayers.length} Players`;
+        }
+
+        function renderPlayingXI() {
+            const container = document.getElementById('playing-xi-list');
+            container.innerHTML = '';
+            const t = getTeam();
+
+            if (t.xi.length === 0) {
+                container.innerHTML = `<div class="text-center p-8 opacity-40 font-black text-2xl uppercase select-none">Select players from the left<br>to build your XI</div>`;
+            } else {
+                t.xi.forEach((p, i) => {
+                    const role = getRole(p);
+                    const isCapt = t.captain === p;
+                    const note = t.notes[p];
+
+                    const item = document.createElement('div');
+                    item.className = "draggable-item neo-box p-3 flex items-center gap-3 bg-white relative group";
+                    item.draggable = true;
+
+                    item.addEventListener('dragstart', (e) => handleDragStart(e, i));
+                    item.addEventListener('dragover', handleDragOver);
+                    item.addEventListener('drop', (e) => handleDrop(e, i));
+                    item.addEventListener('dragend', handleDragEnd);
+
+                    item.innerHTML = `
+                        <div class="font-black text-2xl text-gray-200 select-none w-8 text-center cursor-move">#${i + 1}</div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-lg leading-none uppercase ${isCapt ? 'underline decoration-4 decoration-yellow-400' : ''}">${p}</span>
+                                ${isCapt ? '<span class="bg-black text-white text-[10px] px-1 font-bold">C</span>' : ''}
+                            </div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[10px] font-bold bg-gray-200 px-1 border border-black">${role}</span>
+                                ${note ? `<span class="text-[10px] bg-yellow-100 border border-black px-1 truncate max-w-[150px]" title="${note}">📝 ${note}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="editNote('${p}')" class="text-xs font-bold underline hover:text-blue-600" title="Note">Note</button>
+                            ${!isCapt ? `<button onclick="setCaptain('${p}')" class="text-xs font-bold underline hover:text-yellow-600" title="Captain">Capt</button>` : ''}
+                            <button onclick="removePlayer('${p}')" class="neo-btn w-6 h-6 flex items-center justify-center bg-red-500 text-white text-xs">X</button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            // Impact
+            const impactSlot = document.getElementById('impact-slot');
+            impactSlot.innerHTML = '';
+
+            if (t.impact) {
+                const p = t.impact;
+                const note = t.notes[p];
+                impactSlot.innerHTML = `
+                    <div class="neo-box bg-yellow-100 p-4 border-dashed border-2 flex justify-between items-center group relative">
                         <div>
-                            <div class="font-bold text-slate-800">${player}</div>
-                            <div class="text-xs text-slate-500">${role}</div>
+                            <div class="font-bold text-xl uppercase">${p}</div>
+                            <div class="flex gap-2 text-xs">
+                                <span class="font-black bg-yellow-400 px-1 text-black border border-black">${getRole(p)}</span>
+                                ${note ? `<span class="bg-white border border-black px-1 truncate max-w-[100px]">📝 ${note}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editNote('${p}')" class="text-xs font-bold underline hover:text-blue-600">Note</button>
+                            <button onclick="removePlayer('${p}', true)" class="neo-btn px-2 py-1 bg-red-500 text-white text-xs">REMOVE</button>
                         </div>
                     </div>
-                    <button onclick="removeFromXI('${player}')" class="text-stone-400 hover:text-red-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                `;
-                xiList.appendChild(div);
-            });
-
-            const emptySlots = 11 - teamState.xi.length;
-            for(let i=0; i<emptySlots; i++) {
-                const div = document.createElement('div');
-                div.className = "flex items-center justify-between p-3 border border-dashed border-stone-300 rounded bg-stone-50/50";
-                div.innerHTML = `
-                    <div class="flex items-center gap-3 opacity-50">
-                        <span class="text-stone-300 font-bold text-lg w-6 text-center">${teamState.xi.length + i + 1}</span>
-                        <div class="text-sm font-medium text-stone-400">Empty Slot</div>
-                    </div>
-                `;
-                xiList.appendChild(div);
-            }
-
-            const impactSlot = document.getElementById('impact-player-slot');
-            if (teamState.impact) {
-                const role = getRole(teamState.impact);
-                impactSlot.className = "p-3 bg-yellow-50 rounded border border-yellow-300 flex justify-between items-center shadow-sm";
-                impactSlot.innerHTML = `
-                    <div>
-                        <div class="font-bold text-yellow-900">${teamState.impact}</div>
-                        <div class="text-xs text-yellow-700">${role}</div>
-                    </div>
-                    <button onclick="removeImpact()" class="text-yellow-600 hover:text-yellow-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
                 `;
             } else {
-                impactSlot.className = "min-h-[50px] border-2 border-dashed border-yellow-300 rounded-lg flex items-center justify-center text-sm text-yellow-600 bg-yellow-100/50 cursor-pointer hover:bg-yellow-100 transition-colors";
-                impactSlot.innerHTML = "Select an Impact Player from Squad";
+                impactSlot.innerHTML = `
+                    <div class="h-full flex items-center justify-center border-2 border-dashed border-gray-400 rounded bg-gray-50 text-gray-400 text-sm font-bold uppercase cursor-pointer hover:bg-yellow-50 hover:border-yellow-400 hover:text-yellow-600 transition-colors" onclick="alert('Select players from the left list to add. If XI is full, they can be added as Impact.')">
+                        + Add Impact Player
+                    </div>
+                `;
             }
 
-            updateAnalytics();
+            // Status
+            const count = t.xi.length;
+            const xiSt = document.getElementById('xi-status');
+            xiSt.textContent = `${count}/11 Selected`;
+            xiSt.className = `px-2 py-0.5 border border-black font-bold text-white max-w-fit ${count === 11 ? 'bg-green-600' : 'bg-red-500'}`;
+
+            const impStat = document.getElementById('impact-status');
+            impStat.textContent = t.impact ? "Impact Ready" : "Impact Missing";
+            impStat.className = `px-2 py-0.5 border border-black font-bold text-white max-w-fit ${t.impact ? 'bg-green-600' : 'bg-gray-400'}`;
         }
 
-        // --- Export Functions ---
+        function renderStats() {
+            const t = getTeam();
+            const pool = [...t.xi];
+            if (t.impact) pool.push(t.impact);
 
-        // Prepares the hidden DOM template with data for a specific team
-        function prepareExportTemplate(teamCode) {
-            const team = rawData[teamCode];
-            const sel = state.selections[teamCode];
-            const header = document.getElementById('exp-header');
-            
-            // Apply team specific gradient
-            header.className = `p-6 rounded-xl flex justify-between items-center text-white ${team.colorClass}`;
-            
-            document.getElementById('exp-team-name').textContent = team.name;
-            const managers = document.querySelectorAll('.exp-manager-name');
-            managers.forEach(el => el.textContent = state.managerName);
+            let stats = { BAT: 0, BOWL: 0, AR: 0, WK: 0 };
 
-            // Populate XI
+            // Map roles roughly to 4 categories for chart
+            function getCat(r) {
+                if (r.includes('WK')) return 'WK';
+                if (r.includes('Bowl')) return 'BOWL';
+                if (r.includes('All')) return 'AR';
+                return 'BAT';
+            }
+
+            pool.forEach(p => {
+                const r = getRole(p);
+                stats[getCat(r)]++;
+            });
+
+            document.getElementById('stat-bat').textContent = stats.BAT;
+            document.getElementById('stat-bowl').textContent = stats.BOWL;
+            document.getElementById('stat-ar').textContent = stats.AR;
+            document.getElementById('stat-wk').textContent = stats.WK;
+
+            document.getElementById('team-captain-display').textContent = t.captain || "-";
+
+            // Chart Update
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = [stats.BAT, stats.BOWL, stats.AR, stats.WK];
+                chartInstance.update();
+            }
+        }
+
+        // --- EXPORT ---
+        async function exportSquad(type) {
+            const t = getTeam();
+            const td = rawData[APP_STATE.currentTeam];
+
+            // Fill Template
+            const tpl = document.getElementById('export-template');
+
+            // 1. Theme Color
+            tpl.style.borderColor = td.colorHex;
+            document.getElementById('exp-bg-decor').style.backgroundColor = td.colorHex;
+
+            document.getElementById('exp-team-name').textContent = td.name;
+            document.querySelectorAll('.exp-manager-name').forEach(e => e.textContent = APP_STATE.managerName);
+            document.getElementById('exp-date').textContent = new Date().toLocaleDateString();
+
+            // 2. XI List
             const xiList = document.getElementById('exp-xi-list');
             xiList.innerHTML = '';
-            if(sel.xi.length > 0) {
-                sel.xi.forEach((p, i) => {
-                    const d = document.createElement('div');
-                    d.className = "flex items-center gap-3 p-2 bg-stone-50 rounded border border-stone-100";
-                    d.innerHTML = `<span class="font-bold text-slate-400 w-6">${i+1}</span> <span class="font-bold text-slate-800">${p}</span> <span class="text-xs text-slate-500 ml-auto">${getRole(p)}</span>`;
-                    xiList.appendChild(d);
+            if (t.xi.length === 0) {
+                xiList.innerHTML = '<div class="text-4xl text-gray-300 font-black uppercase text-center py-10">Empty Squad</div>';
+            } else {
+                t.xi.forEach((p, i) => {
+                    const isCapt = t.captain === p;
+                    const role = getRole(p);
+                    const note = t.notes[p];
+
+                    const el = document.createElement('div');
+                    el.className = "flex items-center gap-4 text-black border-2 border-black px-2 py-1 bg-white shadow-[4px_4px_0px_0px_#000]";
+                    el.innerHTML = `
+                        <div class="w-8 text-center font-black text-xl text-gray-300">#${i + 1}</div>
+                        <div class="flex-1">
+                            <div class="text-lg font-black uppercase flex items-center gap-2">
+                                <span class="${isCapt ? 'underline decoration-4 decoration-yellow-400' : ''}">${p}</span>
+                                ${isCapt ? '<span class="bg-black text-white text-xs px-1 font-bold rounded-sm">CAPT</span>' : ''}
+                            </div>
+                            <div class="text-[10px] font-bold text-gray-500 flex gap-2">
+                                <span>${role}</span>
+                                ${note ? `<span class="italic text-black bg-yellow-100 px-1 border border-black border-dashed">${note}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    xiList.appendChild(el);
                 });
-            } else {
-                xiList.innerHTML = '<div class="text-stone-400 italic p-4">No Players Selected</div>';
             }
 
-            // Populate Impact
-            const impactName = document.getElementById('exp-impact');
-            const impactRole = document.getElementById('exp-impact-role');
-            if(sel.impact) {
-                impactName.textContent = sel.impact;
-                impactName.className = "text-xl font-bold text-slate-800";
-                impactRole.textContent = getRole(sel.impact);
+            // 3. Impact
+            const impDisplay = document.getElementById('exp-impact-display');
+            if (t.impact) {
+                impDisplay.innerHTML = `
+                    <div class="text-3xl font-black uppercase">${t.impact}</div>
+                    <div class="text-sm font-bold uppercase opacity-80">${getRole(t.impact)}</div>
+                    ${t.notes[t.impact] ? `<div class="mt-2 text-xs font-bold border-t border-black pt-1 italic">"${t.notes[t.impact]}"</div>` : ''}
+                `;
             } else {
-                impactName.textContent = "Not Selected";
-                impactName.className = "text-xl font-bold text-stone-300 italic";
-                impactRole.textContent = "";
+                impDisplay.innerHTML = `<div class="text-3xl font-black uppercase opacity-20">None Selected</div>`;
             }
 
-            // Populate Bench (Everyone else)
-            const benchList = document.getElementById('exp-bench-list');
-            benchList.innerHTML = '';
-            const bench = team.players.filter(p => !sel.xi.includes(p) && p !== sel.impact);
-            bench.forEach(p => {
-                const s = document.createElement('span');
-                s.textContent = p;
-                s.className = "bg-stone-100 px-2 py-1 rounded text-xs inline-block m-0.5 border border-stone-200";
-                benchList.appendChild(s);
+            // 4. Stats & Captain
+            let stats = { BAT: 0, BOWL: 0, AR: 0, WK: 0 };
+            function getCat(r) {
+                if (r.includes('WK')) return 'WK';
+                if (r.includes('Bowl')) return 'BOWL';
+                if (r.includes('All')) return 'AR';
+                return 'BAT';
+            }
+            [...t.xi, t.impact].filter(x => x).forEach(p => stats[getCat(getRole(p))]++);
+
+            document.getElementById('exp-stat-bat').textContent = stats.BAT;
+            document.getElementById('exp-stat-ab').textContent = stats.BOWL + stats.AR + stats.WK; // Summarized for design
+
+            document.getElementById('exp-captain').textContent = t.captain || "NONE";
+
+            // DRAW - Make template visible temporarily for proper rendering
+            const wrapper = document.getElementById('export-container-wrapper');
+            wrapper.style.left = '0'; // Bring into view
+
+            // Small delay to ensure DOM is fully rendered
+            await new Promise(resolve => setTimeout(resolve, 300));
+            window.scrollTo(0, 0); // Ensure top is clear
+
+            const canvas = await html2canvas(tpl, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                height: tpl.scrollHeight
             });
+
+            // Hide template again
+            wrapper.style.left = '-9999px';
+
+            const fileName = `${APP_STATE.currentTeam}_Squad_${APP_STATE.managerName}`;
+
+            if (type === 'image') {
+                const link = document.createElement('a');
+                link.download = fileName + '.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            } else {
+                const { jsPDF } = window.jspdf;
+                // Dynamic Page Size
+                const pdf = new jsPDF({
+                    orientation: canvas.width > canvas.height ? 'l' : 'p',
+                    unit: 'px',
+                    format: [canvas.width, canvas.height]
+                });
+
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save(fileName + '.pdf');
+            }
         }
 
-        function exportCurrentTeam(type) {
-            const teamCode = state.currentTeam;
-            prepareExportTemplate(teamCode);
-            const element = document.getElementById('export-template');
-            const btnStatus = document.getElementById('export-status');
-            
-            btnStatus.textContent = "Generating...";
-            btnStatus.classList.remove('hidden');
-
-            html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
-                if (type === 'image') {
-                    const link = document.createElement('a');
-                    link.download = `${teamCode}_PlayingXI_${state.managerName}.png`;
-                    link.href = canvas.toDataURL();
-                    link.click();
-                } else if (type === 'pdf') {
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgProps = pdf.getImageProperties(imgData);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    pdf.save(`${teamCode}_PlayingXI_${state.managerName}.pdf`);
-                }
-                btnStatus.classList.add('hidden');
-            });
-        }
-
-        async function exportAllTeams() {
+        async function exportAllSquads() {
             const btn = document.getElementById('btn-export-all');
-            const status = document.getElementById('export-status');
             const originalText = btn.innerHTML;
-            
+            btn.innerHTML = "Processing...";
             btn.disabled = true;
-            btn.innerHTML = `<div class="loader mr-2 border-white border-t-transparent w-4 h-4"></div> Processing...`;
-            status.classList.remove('hidden');
-            status.textContent = "Initializing PDF generation...";
 
             const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            // For Bulk Export, individual pages might be different sizes if the content differs slightly (dynamic squad length etc, though here playing XI is fixed 11).
+            // However, jsPDF main instance usually expects a uniform internal structure, but we can add pages with unique sizes.
+
+            // We will create the PDF instance only after capturing the first canvas to know the dimensions.
+            let pdf = null;
+
             const teamCodes = Object.keys(rawData);
+
+            const savedTeam = APP_STATE.currentTeam;
+
+            const wrapper = document.getElementById('export-container-wrapper');
+            wrapper.style.left = '0';
 
             try {
                 for (let i = 0; i < teamCodes.length; i++) {
                     const code = teamCodes[i];
-                    status.textContent = `Generating ${code} (${i+1}/${teamCodes.length})...`;
-                    
-                    prepareExportTemplate(code);
-                    const element = document.getElementById('export-template');
-                    
-                    // Small delay to ensure DOM render
-                    await new Promise(r => setTimeout(r, 100));
+                    APP_STATE.currentTeam = code;
 
-                    const canvas = await html2canvas(element, { scale: 1.5, useCORS: true });
+                    const t = APP_STATE.teams[code];
+                    const td = rawData[code];
+
+                    const tpl = document.getElementById('export-template');
+                    document.getElementById('exp-team-name').textContent = td.name;
+                    document.getElementById('exp-bg-decor').style.backgroundColor = td.colorHex;
+
+                    const xiList = document.getElementById('exp-xi-list');
+                    xiList.innerHTML = '';
+                    if (t.xi.length === 0) {
+                        xiList.innerHTML = '<div class="text-4xl text-gray-300 font-black uppercase text-center py-10">Empty Squad</div>';
+                    } else {
+                        t.xi.forEach((p, idx) => {
+                            const isCapt = t.captain === p;
+                            const role = getRole(p);
+                            const note = t.notes[p];
+                            const el = document.createElement('div');
+                            el.className = "flex items-center gap-4 text-black border-2 border-black px-2 py-1 bg-white shadow-[4px_4px_0px_0px_#000]";
+                            el.innerHTML = `
+                                <div class="w-8 text-center font-black text-xl text-gray-300">#${idx + 1}</div>
+                                <div class="flex-1">
+                                    <div class="text-lg font-black uppercase flex items-center gap-2">
+                                        <span class="${isCapt ? 'underline decoration-4 decoration-yellow-400' : ''}">${p}</span>
+                                        ${isCapt ? '<span class="bg-black text-white text-xs px-1 font-bold rounded-sm">CAPT</span>' : ''}
+                                    </div>
+                                    <div class="font-bold text-[10px] uppercase opacity-60">${role}</div>
+                                </div>
+                            `;
+                            xiList.appendChild(el);
+                        });
+                    }
+
+                    // Impact
+                    const impDisplay = document.getElementById('exp-impact-display');
+                    impDisplay.innerHTML = t.impact ? `<div class="text-3xl font-black uppercase">${t.impact}</div>` : `<div class="text-3xl font-black uppercase opacity-20">None Selected</div>`;
+
+                    // Stats
+                    let stats = { BAT: 0, BOWL: 0, AR: 0, WK: 0 };
+                    function getCat(r) {
+                        if (r.includes('WK')) return 'WK';
+                        if (r.includes('Bowl')) return 'BOWL';
+                        if (r.includes('All')) return 'AR';
+                        return 'BAT';
+                    }
+                    [...t.xi, t.impact].filter(x => x).forEach(p => stats[getCat(getRole(p))]++);
+                    document.getElementById('exp-stat-bat').textContent = stats.BAT;
+                    document.getElementById('exp-stat-ab').textContent = stats.BOWL + stats.AR + stats.WK;
+                    document.getElementById('exp-captain').textContent = t.captain || "NONE";
+
+                    await new Promise(r => setTimeout(r, 200));
+
+                    const canvas = await html2canvas(tpl, {
+                        scale: 1.5,
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        height: tpl.scrollHeight
+                    });
+
                     const imgData = canvas.toDataURL('image/png');
-                    const imgProps = pdf.getImageProperties(imgData);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-                    if (i > 0) pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+                    if (i === 0) {
+                        pdf = new jsPDF({
+                            orientation: canvas.width > canvas.height ? 'l' : 'p',
+                            unit: 'px',
+                            format: [canvas.width, canvas.height]
+                        });
+                        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                    } else {
+                        // Add page matching the canvas dimensions
+                        pdf.addPage([canvas.width, canvas.height], canvas.width > canvas.height ? 'l' : 'p');
+                        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                    }
                 }
-                
-                status.textContent = "Saving File...";
-                pdf.save(`IPL2026_All_Squads_${state.managerName}.pdf`);
-            } catch (error) {
-                console.error(error);
-                alert("Error generating PDF. Please try again.");
+
+                pdf.save(`IPL2026_ALL_TEAMS_${APP_STATE.managerName}.pdf`);
+
+            } catch (e) {
+                console.error(e);
+                alert("Export Failed");
             } finally {
-                btn.disabled = false;
+                APP_STATE.currentTeam = savedTeam; // Restore
+                wrapper.style.left = '-9999px'; // Hide
                 btn.innerHTML = originalText;
-                status.classList.add('hidden');
+                btn.disabled = false;
             }
         }
 
-        // --- Init ---
-        window.onload = function() {
-            renderTeamSelector();
+        // --- INIT ---
+        window.onload = function () {
             initChart();
-            renderView();
+            renderAll();
         };
 
     </script>
-    
-    <!-- Footer -->
-    <footer class="bg-white border-t border-stone-200 mt-8 py-4 text-center text-sm text-slate-500">
-        <p>Made by Reyansh Varshney</p>
-    </footer>
 </body>
+
 </html>
